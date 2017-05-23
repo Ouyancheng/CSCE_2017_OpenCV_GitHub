@@ -37,7 +37,7 @@ public:
 	void blur(cv::Mat &_srcImg, cv::Mat &_dstImg, int blurType = BLUR_TYPE::MEDIAN_BLUR);
 
 	//Returns the preprocessed image.
-	cv::Mat run();
+	std::vector<cv::Mat> run();
 
 public:
 	int meanBlurKernelSize;
