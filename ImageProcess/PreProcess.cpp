@@ -79,9 +79,11 @@ std::vector<cv::Mat> PreProcess::run() {
 
 	cv::Mat dstImg = srcImg.clone();
 
-	std::vector<cv::Mat> channels;
-	cv::split(srcImg, channels);
-	srcImg = channels[2];
+//	std::vector<cv::Mat> channels;
+//	cv::split(srcImg, channels);
+//	srcImg = channels[2];
+
+	cv::cvtColor(srcImg, srcImg, ::CV_BGR2GRAY);
 
 	this->threshold(srcImg, srcImg);
 	this->blur(srcImg, srcImg, BLUR_TYPE::MEDIAN_BLUR);
@@ -95,11 +97,14 @@ std::vector<cv::Mat> PreProcess::run() {
 	}
 
 	const float ratio = 28.0 / 16.0;
-	std::vector<cv::RotatedRect> sudoku;
 	const int sudokuWidth = 127;
 	const int sudokuHeight = 71;
+	const int angleTolerance = 6;
+	const float ratioToleranceRate = 0.2;
+	const float dimensionsToleranceRate = 0.4;
 
 	std::vector<cv::Mat> ROI;
+	std::vector<cv::RotatedRect> rects;
 
 	for (auto &i : contours) {
 		cv::RotatedRect tempRect = cv::minAreaRect(i);
@@ -109,26 +114,70 @@ std::vector<cv::Mat> PreProcess::run() {
 		const cv::Size2f &s= tempRect.size;
 		float ratio_cur = s.width / s.height;
 
-		if (ratio_cur > 0.8 * ratio && ratio_cur < 1.2 * ratio &&
-			s.width > 0.6 * sudokuWidth && s.width < 1.4 * sudokuWidth &&
-			s.height > 0.6 * sudokuHeight && s.height < 1.4 * sudokuHeight &&
-			((tempRect.angle > -10 && tempRect.angle < 10) || tempRect.angle < -170 || tempRect.angle > 170)){
+		if (ratio_cur > (1.0-ratioToleranceRate) * ratio && ratio_cur < (1.0+ratioToleranceRate) * ratio &&
+			s.width > (1.0-dimensionsToleranceRate) * sudokuWidth && s.width < (1.0+dimensionsToleranceRate) * sudokuWidth &&
+			s.height > (1.0-dimensionsToleranceRate) * sudokuHeight && s.height < (1.0+dimensionsToleranceRate) * sudokuHeight &&
+			((tempRect.angle > -angleTolerance && tempRect.angle < angleTolerance) || tempRect.angle < (-180+angleTolerance) || tempRect.angle > (180-angleTolerance))) {
+			rects.push_back(tempRect);
+//			cv::Point2f vertices[4];
+//			tempRect.points(vertices);
+//			for (int i=0; i<4; i++) {
+//				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
+//			}
+//			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
+		}
+	}
 
-			sudoku.push_back(tempRect);
+	std::printf("Size of rects: %lu\n", rects.size());
 
+	if (rects.size() < 9) {
+		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of ROI vector less than 9. \n");
+	} else if (rects.size() > 9) {
+		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of ROI vector greater than 9. \n");
+
+		double minDist = DBL_MAX;
+		int centerIndex;
+		std::vector<DistanceStruct> distanceVector(rects.size(), DistanceStruct(rects.size()));
+
+		//Calculate the distances and choose a rectangle with smallest distances sum as the center.
+		for (int i=0; i<rects.size(); i++) {
+			for (int j=0; j<rects.size(); j++) {
+				distanceVector[i].distances.at(j).dist = std::sqrt((rects[i].center.x-rects[j].center.x)*(rects[i].center.x-rects[j].center.x) + (rects[i].center.y-rects[j].center.y)*(rects[i].center.y-rects[j].center.y));
+				distanceVector[i].distances.at(j).index = j;
+				distanceVector[i].totalDist += distanceVector[i].distances.at(j).dist;
+			}
+			if (distanceVector[i].totalDist < minDist) {
+				minDist = distanceVector[i].totalDist;
+				centerIndex = i;
+			}
+		}
+
+		//Search 9 nearest rectangles.
+		std::vector<DistanceWithIndex> &selectedDistances = distanceVector.at(centerIndex).distances;
+		std::sort(selectedDistances.begin(), selectedDistances.end(), [](DistanceWithIndex &a, DistanceWithIndex &b){return (a.dist < b.dist);});
+
+		for (int i=0; i<9; i++) {
 			cv::Point2f vertices[4];
-			tempRect.points(vertices);
+			rects[selectedDistances.at(i).index].points(vertices);
 			for (int i=0; i<4; i++) {
 				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
 			}
 			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
 		}
-	}
 
-	if (ROI.size() < 9) {
-		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of ROI vector less than 9. \n");
-	} else if (ROI.size() > 9) {
-		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of ROI vector greater than 9. \n");
+		//TODO This is not a good algorithm for searching because if you set angleTolerance to 8, it will choose the number (3) twice and will not choose the number (9).
+
+	} else {
+
+		for (int i=0; i<rects.size(); i++) {
+			cv::Point2f vertices[4];
+			rects[i].points(vertices);
+			for (int i=0; i<4; i++) {
+				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
+			}
+			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
+		}
+
 	}
 
 	//ROI.push_back(dstImg);

@@ -23,6 +23,19 @@ public:
 		BILATERAL_BLUR = 3
 	};
 
+	struct DistanceWithIndex {
+		double dist;
+		int index;
+	};
+
+	struct DistanceStruct {
+		std::vector<DistanceWithIndex> distances;
+		double totalDist;
+		DistanceStruct(size_t size) : distances(std::vector<DistanceWithIndex>(size)), totalDist(0) {
+
+		}
+	};
+
 public:
 	PreProcess();
 	virtual ~PreProcess();
