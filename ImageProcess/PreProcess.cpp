@@ -99,7 +99,7 @@ std::vector<cv::Mat> PreProcess::run() {
 	const float ratio = 28.0 / 16.0;
 	const int sudokuWidth = 127;
 	const int sudokuHeight = 71;
-	const int angleTolerance = 6;
+	const int angleTolerance = 8;
 	const float ratioToleranceRate = 0.2;
 	const float dimensionsToleranceRate = 0.4;
 
@@ -119,6 +119,8 @@ std::vector<cv::Mat> PreProcess::run() {
 			s.height > (1.0-dimensionsToleranceRate) * sudokuHeight && s.height < (1.0+dimensionsToleranceRate) * sudokuHeight &&
 			((tempRect.angle > -angleTolerance && tempRect.angle < angleTolerance) || tempRect.angle < (-180+angleTolerance) || tempRect.angle > (180-angleTolerance))) {
 			rects.push_back(tempRect);
+			cv::line(dstImg, tempRect.center, tempRect.center, Scalar(0, 0, 255), 6);
+			printf("(%f, %f)\n", tempRect.center.x, tempRect.center.y);
 //			cv::Point2f vertices[4];
 //			tempRect.points(vertices);
 //			for (int i=0; i<4; i++) {
@@ -156,7 +158,34 @@ std::vector<cv::Mat> PreProcess::run() {
 		std::vector<DistanceWithIndex> &selectedDistances = distanceVector.at(centerIndex).distances;
 		std::sort(selectedDistances.begin(), selectedDistances.end(), [](DistanceWithIndex &a, DistanceWithIndex &b){return (a.dist < b.dist);});
 
-		for (int i=0; i<9; i++) {
+		/*
+		 *	1 2 3
+		 *	4 5 6
+		 *	7 8 9
+		 *
+		 * First to select 2,4,5,6,8 because they have the nearest distances theoretically... But the picture should be upright...
+		 *
+		 * TODO We can solve the rotated picture using the rotated angle of the center rectangle!~
+		 */
+		for (int i=0; i<5; i++) {
+			cv::Point2f vertices[4];
+			rects[selectedDistances.at(i).index].points(vertices);
+			for (int i=0; i<4; i++) {
+				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
+			}
+			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
+		}
+		bool downRight = false, downLeft = false, downleft = false, downright = false;
+		for (int i=5; i<rects.size(); i++) {
+			if (rects[selectedDistances.at(i).index].center.x < rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y < rects[centerIndex].center.y) {
+				if (downRight) continue; else downRight = true;
+			} else if (rects[selectedDistances.at(i).index].center.x < rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y > rects[centerIndex].center.y) {
+				if (downleft) continue; else downleft = true;
+			} else if (rects[selectedDistances.at(i).index].center.x > rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y < rects[centerIndex].center.y) {
+				if (downLeft) continue; else downLeft = true;
+			} else if (rects[selectedDistances.at(i).index].center.x > rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y > rects[centerIndex].center.y) {
+				if (downright) continue; else downright = true;
+			}
 			cv::Point2f vertices[4];
 			rects[selectedDistances.at(i).index].points(vertices);
 			for (int i=0; i<4; i++) {
@@ -165,8 +194,9 @@ std::vector<cv::Mat> PreProcess::run() {
 			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
 		}
 
+		std::printf("downLeft:%d downright:%d downRight:%d downleft:%d\n", downLeft, downright, downRight, downleft);
 		//TODO This is not a good algorithm for searching because if you set angleTolerance to 8, it will choose the number (3) twice and will not choose the number (9).
-
+		//DONE...
 	} else {
 
 		for (int i=0; i<rects.size(); i++) {
@@ -179,6 +209,9 @@ std::vector<cv::Mat> PreProcess::run() {
 		}
 
 	}
+
+	std::printf("Size of ROI: %lu\n", ROI.size());
+
 
 	//ROI.push_back(dstImg);
 	cv::imshow("Destination Image", dstImg);
