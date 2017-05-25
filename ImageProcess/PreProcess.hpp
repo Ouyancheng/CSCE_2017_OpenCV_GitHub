@@ -36,7 +36,7 @@ public:
 	//Blur the image. Choose blurType from one of the BLUR_TYPE.
 	void blur(cv::Mat &_srcImg, cv::Mat &_dstImg, int blurType = BLUR_TYPE::MEDIAN_BLUR);
 
-	//Returns the preprocessed image.
+	//Returns the preprocessed images.
 	std::vector<cv::Mat> run();
 
 public:

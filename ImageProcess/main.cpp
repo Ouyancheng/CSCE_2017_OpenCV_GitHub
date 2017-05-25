@@ -8,7 +8,7 @@
 #include "PreProcess.hpp"
 using namespace cv;
 int main(int argc, char *argv[]) {
-	Mat srcImg = imread("/Users/Ouyancheng/CPPWORKSPACE/OpenCV/Learning/8.png");
+	Mat srcImg = imread("8.png");
 	Mat dstImg;
 	std::vector<cv::Mat> ROI;
 	if (!srcImg.data) {

@@ -125,6 +125,14 @@ std::vector<cv::Mat> PreProcess::run() {
 		}
 	}
 
+	if (ROI.size() < 9) {
+		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of ROI vector less than 9. \n");
+	} else if (ROI.size() > 9) {
+		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of ROI vector greater than 9. \n");
+	}
+
+	//ROI.push_back(dstImg);
+	cv::imshow("Destination Image", dstImg);
 
 	return ROI;
 }
