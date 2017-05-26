@@ -9,7 +9,7 @@
 using namespace cv;
 int main(int argc, char *argv[]) {
 	Mat srcImg = imread("8.png");
-//	Mat srcImg = imread("/Users/Ouyancheng/CPPWORKSPACE/OpenCV_GitHub/TestFrames/buff_testset_frames/frame18.png");
+//	Mat srcImg = imread("/Users/Ouyancheng/CPPWORKSPACE/OpenCV_GitHub/TestFrames/buff_testset_frames/frame1.png");
 	Mat dstImg;
 	std::vector<cv::Mat> ROI;
 	if (!srcImg.data) {

@@ -133,9 +133,9 @@ std::vector<cv::Mat> PreProcess::run() {
 	std::printf("Size of rects: %lu\n", rects.size());
 
 	if (rects.size() < 9) {
-		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of ROI vector less than 9. \n");
+		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of rects vector less than 9. \n");
 	} else if (rects.size() > 9) {
-		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of ROI vector greater than 9. \n");
+		std::fprintf(stderr, "\033[1;32mWarning\033[0m: Size of rects vector greater than 9. \n");
 
 		double minDist = DBL_MAX;
 		int centerIndex;
@@ -156,6 +156,9 @@ std::vector<cv::Mat> PreProcess::run() {
 
 		//Search 9 nearest rectangles.
 		std::vector<DistanceWithIndex> &selectedDistances = distanceVector.at(centerIndex).distances;
+		for (int i=0; i<selectedDistances.size(); i++) {
+			selectedDistances[i].dist += 0.1 * abs(rects[selectedDistances[i].index].boundingRect().height * rects[selectedDistances[i].index].boundingRect().width - sudokuWidth * sudokuHeight);
+		}
 		std::sort(selectedDistances.begin(), selectedDistances.end(), [](DistanceWithIndex &a, DistanceWithIndex &b){return (a.dist < b.dist);});
 
 		/*
@@ -179,11 +182,11 @@ std::vector<cv::Mat> PreProcess::run() {
 		bool upleft = false, upright = false, downleft = false, downright = false, mid = false;
 		//int x_axis = 0, y_axis = 0;
 		bool up = false, down = false, left = false, right = false;
+		float &centerX = rects[centerIndex].center.x;
+		float &centerY = rects[centerIndex].center.y;
 		for (int i=0; i<rects.size(); i++) {
 			float &targetX = rects[selectedDistances.at(i).index].center.x;
 			float &targetY = rects[selectedDistances.at(i).index].center.y;
-			float &centerX = rects[centerIndex].center.x;
-			float &centerY = rects[centerIndex].center.y;
 			//Edges
 			if (targetX - centerX < distEPS && targetX - centerX > -distEPS && targetY - centerY < distEPS && targetY - centerY > -distEPS) {
 				if (mid) continue; else mid = true;
@@ -197,13 +200,13 @@ std::vector<cv::Mat> PreProcess::run() {
 				if (left) continue; else left = true;
 			}
 			//Corners
-			else if (rects[selectedDistances.at(i).index].center.x < rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y < rects[centerIndex].center.y) {
+			else if (targetX < centerX && targetY < centerY) {
 				if (upleft) continue; else upleft = true;
-			} else if (rects[selectedDistances.at(i).index].center.x < rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y > rects[centerIndex].center.y) {
+			} else if (targetX < centerX && targetY > centerY) {
 				if (downleft) continue; else downleft = true;
-			} else if (rects[selectedDistances.at(i).index].center.x > rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y < rects[centerIndex].center.y) {
+			} else if (targetX > centerX && targetY < centerY) {
 				if (upright) continue; else upright = true;
-			} else if (rects[selectedDistances.at(i).index].center.x > rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y > rects[centerIndex].center.y) {
+			} else if (targetX > centerX && targetY > centerY) {
 				if (downright) continue; else downright = true;
 			}
 			cv::Point2f vertices[4];
