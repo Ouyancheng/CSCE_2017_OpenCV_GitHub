@@ -12,7 +12,6 @@ PreProcess::PreProcess() :
 	GaussianBlurKernelSize(3),
 	medianBlurKernelSize(3),
 	bilateralBlurValue(3),
-	adaptiveThresholdBlockSize(3),
 	srcImg() {
 	// TODO Auto-generated constructor stub
 }
@@ -25,8 +24,7 @@ PreProcess::PreProcess(const cv::Mat &_srcImg) :
 	meanBlurKernelSize(3),
 	GaussianBlurKernelSize(3),
 	medianBlurKernelSize(3),
-	bilateralBlurValue(3),
-	adaptiveThresholdBlockSize(3) {
+	bilateralBlurValue(3) {
 
 	if (!_srcImg.data) {
 		std::fprintf(stderr, "\033[1;31mError\033[0m: Source image is empty. \n");
@@ -42,7 +40,7 @@ void PreProcess::threshold(cv::Mat &_srcImg, cv::Mat &_dstImg, bool adaptive) {
 			(cv::adaptiveThreshold(_srcImg, _dstImg, 255,
 					CV_ADAPTIVE_THRESH_MEAN_C,
 					CV_THRESH_BINARY,
-					adaptiveThresholdBlockSize * 2 + 3, 3)) :
+					6 * 2 + 3, 3)) :
 			((void)cv::threshold(_srcImg, _dstImg, 150, 255, CV_THRESH_BINARY));
 	return;
 }
@@ -85,8 +83,10 @@ std::vector<cv::Mat> PreProcess::run() {
 
 	cv::cvtColor(srcImg, srcImg, ::CV_BGR2GRAY);
 
-	this->threshold(srcImg, srcImg);
+	this->threshold(srcImg, srcImg, true);
 	this->blur(srcImg, srcImg, BLUR_TYPE::MEDIAN_BLUR);
+
+	cv::imshow("srcImg2", srcImg);
 
 	std::vector<std::vector<cv::Point>> contours;
 	std::vector<cv::Vec4i> hierarchy;
@@ -99,7 +99,7 @@ std::vector<cv::Mat> PreProcess::run() {
 	const float ratio = 28.0 / 16.0;
 	const int sudokuWidth = 127;
 	const int sudokuHeight = 71;
-	const int angleTolerance = 8;
+	const int angleTolerance = 6;
 	const float ratioToleranceRate = 0.2;
 	const float dimensionsToleranceRate = 0.4;
 
@@ -120,12 +120,12 @@ std::vector<cv::Mat> PreProcess::run() {
 			((tempRect.angle > -angleTolerance && tempRect.angle < angleTolerance) || tempRect.angle < (-180+angleTolerance) || tempRect.angle > (180-angleTolerance))) {
 			rects.push_back(tempRect);
 			cv::line(dstImg, tempRect.center, tempRect.center, Scalar(0, 0, 255), 6);
-			printf("(%f, %f)\n", tempRect.center.x, tempRect.center.y);
-//			cv::Point2f vertices[4];
-//			tempRect.points(vertices);
-//			for (int i=0; i<4; i++) {
-//				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
-//			}
+//			printf("(%f, %f)\n", tempRect.center.x, tempRect.center.y);
+			cv::Point2f vertices[4];
+			tempRect.points(vertices);
+			for (int i=0; i<4; i++) {
+				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(0, 255, 255), 2);
+			}
 //			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
 		}
 	}
@@ -167,22 +167,42 @@ std::vector<cv::Mat> PreProcess::run() {
 		 *
 		 * TODO We can solve the rotated picture using the rotated angle of the center rectangle!~
 		 */
-		for (int i=0; i<5; i++) {
-			cv::Point2f vertices[4];
-			rects[selectedDistances.at(i).index].points(vertices);
-			for (int i=0; i<4; i++) {
-				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
+//		for (int i=0; i<5; i++) {
+//			cv::Point2f vertices[4];
+//			rects[selectedDistances.at(i).index].points(vertices);
+//			for (int i=0; i<4; i++) {
+//				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
+//			}
+//			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
+//		}
+		const float distEPS = 10;
+		bool upleft = false, upright = false, downleft = false, downright = false, mid = false;
+		//int x_axis = 0, y_axis = 0;
+		bool up = false, down = false, left = false, right = false;
+		for (int i=0; i<rects.size(); i++) {
+			float &targetX = rects[selectedDistances.at(i).index].center.x;
+			float &targetY = rects[selectedDistances.at(i).index].center.y;
+			float &centerX = rects[centerIndex].center.x;
+			float &centerY = rects[centerIndex].center.y;
+			//Edges
+			if (targetX - centerX < distEPS && targetX - centerX > -distEPS && targetY - centerY < distEPS && targetY - centerY > -distEPS) {
+				if (mid) continue; else mid = true;
+			} else if (targetX - centerX < distEPS && targetX - centerX > -distEPS && targetY > centerY) {
+				if (down) continue; else down = true;
+			} else if (targetX - centerX < distEPS && targetX - centerX > -distEPS && targetY < centerY) {
+				if (up) continue; else up = true;
+			} else if (targetY - centerY < distEPS && targetY - centerY > -distEPS && targetX > centerX) {
+				if (right) continue; else right = true;
+			} else if (targetY - centerY < distEPS && targetY - centerY > -distEPS && targetX < centerX) {
+				if (left) continue; else left = true;
 			}
-			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
-		}
-		bool downRight = false, downLeft = false, downleft = false, downright = false;
-		for (int i=5; i<rects.size(); i++) {
-			if (rects[selectedDistances.at(i).index].center.x < rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y < rects[centerIndex].center.y) {
-				if (downRight) continue; else downRight = true;
+			//Corners
+			else if (rects[selectedDistances.at(i).index].center.x < rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y < rects[centerIndex].center.y) {
+				if (upleft) continue; else upleft = true;
 			} else if (rects[selectedDistances.at(i).index].center.x < rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y > rects[centerIndex].center.y) {
 				if (downleft) continue; else downleft = true;
 			} else if (rects[selectedDistances.at(i).index].center.x > rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y < rects[centerIndex].center.y) {
-				if (downLeft) continue; else downLeft = true;
+				if (upright) continue; else upright = true;
 			} else if (rects[selectedDistances.at(i).index].center.x > rects[centerIndex].center.x && rects[selectedDistances.at(i).index].center.y > rects[centerIndex].center.y) {
 				if (downright) continue; else downright = true;
 			}
@@ -194,7 +214,7 @@ std::vector<cv::Mat> PreProcess::run() {
 			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
 		}
 
-		std::printf("downLeft:%d downright:%d downRight:%d downleft:%d\n", downLeft, downright, downRight, downleft);
+		std::printf("downLeft:%d downright:%d downRight:%d downleft:%d up:%d down:%d left:%d right:%d\n", upright, downright, upleft, downleft, up, down, left, right);
 		//TODO This is not a good algorithm for searching because if you set angleTolerance to 8, it will choose the number (3) twice and will not choose the number (9).
 		//DONE...
 	} else {

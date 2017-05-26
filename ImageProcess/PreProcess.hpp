@@ -57,7 +57,6 @@ public:
 	int GaussianBlurKernelSize;
 	int medianBlurKernelSize;
 	int bilateralBlurValue;
-	int adaptiveThresholdBlockSize;
 
 	cv::Mat srcImg;
 
