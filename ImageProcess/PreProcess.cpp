@@ -8,10 +8,6 @@
 #include "PreProcess.hpp"
 using namespace cv;
 PreProcess::PreProcess() :
-	meanBlurKernelSize(3),
-	GaussianBlurKernelSize(3),
-	medianBlurKernelSize(3),
-	bilateralBlurValue(3),
 	srcImg() {
 	// TODO Auto-generated constructor stub
 }
@@ -20,11 +16,7 @@ PreProcess::~PreProcess() {
 	// TODO Auto-generated destructor stub
 }
 
-PreProcess::PreProcess(const cv::Mat &_srcImg) :
-	meanBlurKernelSize(3),
-	GaussianBlurKernelSize(3),
-	medianBlurKernelSize(3),
-	bilateralBlurValue(3) {
+PreProcess::PreProcess(const cv::Mat &_srcImg) {
 
 	if (!_srcImg.data) {
 		std::fprintf(stderr, "\033[1;31mError\033[0m: Source image is empty. \n");
@@ -45,21 +37,21 @@ void PreProcess::threshold(cv::Mat &_srcImg, cv::Mat &_dstImg, bool adaptive) {
 	return;
 }
 
-void PreProcess::blur(cv::Mat &_srcImg, cv::Mat &_dstImg, int blurType) {
+void PreProcess::blur(cv::Mat &_srcImg, cv::Mat &_dstImg, int blurType, int value) {
 	switch (blurType) {
 	case BLUR_TYPE::MEAN_BLUR:
-		cv::blur(_srcImg, _dstImg, cv::Size(meanBlurKernelSize, meanBlurKernelSize));
+		cv::blur(_srcImg, _dstImg, cv::Size(value, value));
 		break;
 	case BLUR_TYPE::GAUSSIAN_BLUR:
 		cv::GaussianBlur(_srcImg, _dstImg,
-				cv::Size(GaussianBlurKernelSize, GaussianBlurKernelSize),
+				cv::Size(value, value),
 				0, 0);
 		break;
 	case BLUR_TYPE::MEDIAN_BLUR:
-		cv::medianBlur(_srcImg, _dstImg, medianBlurKernelSize);
+		cv::medianBlur(_srcImg, _dstImg, value);
 		break;
 	case BLUR_TYPE::BILATERAL_BLUR:
-		cv::bilateralFilter(_srcImg, _dstImg, bilateralBlurValue, bilateralBlurValue * 2, bilateralBlurValue / 2);
+		cv::bilateralFilter(_srcImg, _dstImg, value, value * 2, value / 2);
 		break;
 	default:
 		std::fprintf(stderr, "\033[1;31mError\033[0m: Unknown blur type. \n");

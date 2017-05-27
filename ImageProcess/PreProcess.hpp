@@ -47,16 +47,12 @@ public:
 	void threshold(cv::Mat &_srcImg, cv::Mat &_dstImg, bool adaptive = false);
 
 	//Blur the image. Choose blurType from one of the BLUR_TYPE.
-	void blur(cv::Mat &_srcImg, cv::Mat &_dstImg, int blurType = BLUR_TYPE::MEDIAN_BLUR);
+	void blur(cv::Mat &_srcImg, cv::Mat &_dstImg, int blurType = BLUR_TYPE::MEDIAN_BLUR, int value = 3);
 
 	//Returns the preprocessed images.
 	std::vector<cv::Mat> run();
 
 public:
-	int meanBlurKernelSize;
-	int GaussianBlurKernelSize;
-	int medianBlurKernelSize;
-	int bilateralBlurValue;
 
 	cv::Mat srcImg;
 
