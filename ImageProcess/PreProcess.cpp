@@ -10,6 +10,7 @@ using namespace cv;
 PreProcess::PreProcess() :
 	srcImg() {
 	// TODO Auto-generated constructor stub
+	std::printf("Instance Constructed!~ \n");
 }
 
 PreProcess::~PreProcess() {
@@ -18,19 +19,19 @@ PreProcess::~PreProcess() {
 }
 
 PreProcess::PreProcess(const cv::Mat &_srcImg) {
-
 	if (!_srcImg.data) {
 		std::fprintf(stderr, "\033[1;31mError\033[0m: Source image is empty. \n");
 		srcImg = cv::Mat();
 	} else {
 		srcImg = _srcImg;
 	}
+	std::printf("Instance Constructed!~ \n");
 }
-std::unique_ptr<PreProcess> PreProcess::instance = nullptr;
-std::unique_ptr<PreProcess> PreProcess::getInstance(const cv::Mat &_srcImg) {
+std::shared_ptr<PreProcess> PreProcess::instance = nullptr;
+std::shared_ptr<PreProcess> PreProcess::getInstance(const cv::Mat &_srcImg) {
 	if (instance != nullptr) {
 		instance->loadImage(_srcImg);
-		return std::forward<std::unique_ptr<PreProcess>>(instance);
+		return instance;
 	}
 	else return std::unique_ptr<PreProcess>(new PreProcess(_srcImg));
 }

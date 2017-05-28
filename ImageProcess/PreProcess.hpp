@@ -46,7 +46,7 @@ public:
 	virtual ~PreProcess();
 
 public:
-	static std::unique_ptr<PreProcess> getInstance(const cv::Mat &_srcImg);
+	static std::shared_ptr<PreProcess> getInstance(const cv::Mat &_srcImg);
 
 	//Loads an image.
 	bool loadImage(const cv::Mat &_srcImg);
@@ -63,7 +63,7 @@ public:
 private:
 
 	cv::Mat srcImg;
-	static std::unique_ptr<PreProcess> instance;
+	static std::shared_ptr<PreProcess> instance;
 
 };
 
