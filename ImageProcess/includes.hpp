@@ -20,7 +20,7 @@
 #include <cmath>
 #include <cfloat>
 #include <algorithm>
-
+#include <memory>
 
 
 #endif /* INCLUDES_HPP_ */

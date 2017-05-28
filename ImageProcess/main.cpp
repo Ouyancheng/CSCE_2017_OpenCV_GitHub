@@ -17,8 +17,9 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-	PreProcess pp(srcImg);
-	ROI = pp.run();
+//	PreProcess pp(srcImg);
+	std::unique_ptr<PreProcess> ppptr = PreProcess::getInstance(srcImg);
+	ROI = ppptr->run();
 
 	imshow("Source Image", srcImg);
 	//imshow("Destination Image", dstImg);

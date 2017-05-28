@@ -36,12 +36,21 @@ public:
 		}
 	};
 
-public:
+private:
 	PreProcess();
+	PreProcess(const PreProcess &another);
+	PreProcess &operator = (const PreProcess &another);
+public:
 	virtual ~PreProcess();
 
 	//Opens an image.
 	PreProcess(const cv::Mat &_srcImg);
+
+public:
+	static std::unique_ptr<PreProcess> getInstance(const cv::Mat &_srcImg);
+
+	//Loads an image.
+	bool loadImage(const cv::Mat &_srcImg);
 
 	//Threshold or use adaptive threshold.
 	void threshold(cv::Mat &_srcImg, cv::Mat &_dstImg, bool adaptive = false);
@@ -52,9 +61,10 @@ public:
 	//Returns the preprocessed images.
 	std::vector<cv::Mat> run();
 
-public:
+private:
 
 	cv::Mat srcImg;
+	static std::unique_ptr<PreProcess> instance;
 
 };
 

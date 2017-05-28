@@ -14,6 +14,7 @@ PreProcess::PreProcess() :
 
 PreProcess::~PreProcess() {
 	// TODO Auto-generated destructor stub
+	std::printf("Instance Destructed!~ \n");
 }
 
 PreProcess::PreProcess(const cv::Mat &_srcImg) {
@@ -24,7 +25,23 @@ PreProcess::PreProcess(const cv::Mat &_srcImg) {
 	} else {
 		srcImg = _srcImg;
 	}
+}
+std::unique_ptr<PreProcess> PreProcess::instance = nullptr;
+std::unique_ptr<PreProcess> PreProcess::getInstance(const cv::Mat &_srcImg) {
+	if (instance != nullptr) {
+		instance->loadImage(_srcImg);
+		return std::forward<std::unique_ptr<PreProcess>>(instance);
+	}
+	else return std::unique_ptr<PreProcess>(new PreProcess(_srcImg));
+}
 
+bool PreProcess::loadImage(const cv::Mat &_srcImg) {
+	if (_srcImg.data) {
+		srcImg = _srcImg;
+		return true;
+	} else {
+		return false;
+	}
 }
 
 void PreProcess::threshold(cv::Mat &_srcImg, cv::Mat &_dstImg, bool adaptive) {
