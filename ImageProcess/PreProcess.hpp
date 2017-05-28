@@ -40,11 +40,10 @@ private:
 	PreProcess();
 	PreProcess(const PreProcess &another);
 	PreProcess &operator = (const PreProcess &another);
-public:
-	virtual ~PreProcess();
-
 	//Opens an image.
 	PreProcess(const cv::Mat &_srcImg);
+public:
+	virtual ~PreProcess();
 
 public:
 	static std::unique_ptr<PreProcess> getInstance(const cv::Mat &_srcImg);
