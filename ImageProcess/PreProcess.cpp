@@ -8,24 +8,31 @@
 #include "PreProcess.hpp"
 using namespace cv;
 PreProcess::PreProcess() :
-	srcImg() {
+	srcImg(), original() {
 	// TODO Auto-generated constructor stub
+#if DEBUG
 	std::printf("Instance Constructed!~ \n");
+#endif
 }
 
 PreProcess::~PreProcess() {
 	// TODO Auto-generated destructor stub
+#if DEBUG
 	std::printf("Instance Destructed!~ \n");
+#endif
 }
 
 PreProcess::PreProcess(const cv::Mat &_srcImg) {
 	if (!_srcImg.data) {
 		std::fprintf(stderr, "\033[1;31mError\033[0m: Source image is empty. \n");
-		srcImg = cv::Mat();
+		original = srcImg = cv::Mat();
 	} else {
 		srcImg = _srcImg;
+		original = _srcImg.clone();
 	}
+#if DEBUG
 	std::printf("Instance Constructed!~ \n");
+#endif
 }
 std::shared_ptr<PreProcess> PreProcess::instance = nullptr;
 std::shared_ptr<PreProcess> PreProcess::getInstance(const cv::Mat &_srcImg) {
@@ -39,6 +46,7 @@ std::shared_ptr<PreProcess> PreProcess::getInstance(const cv::Mat &_srcImg) {
 bool PreProcess::loadImage(const cv::Mat &_srcImg) {
 	if (_srcImg.data) {
 		srcImg = _srcImg;
+		original = _srcImg.clone();
 		return true;
 	} else {
 		return false;
@@ -95,16 +103,17 @@ std::vector<cv::Mat> PreProcess::run() {
 
 	this->threshold(srcImg, srcImg, true);
 	this->blur(srcImg, srcImg, BLUR_TYPE::MEDIAN_BLUR);
-
+#if DEBUG
 	cv::imshow("srcImg2", srcImg);
-
+#endif
 	std::vector<std::vector<cv::Point>> contours;
 	std::vector<cv::Vec4i> hierarchy;
-
 	cv::findContours(srcImg, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE);
+#if DEBUG
 	for (int i = 0; i < contours.size(); i++) {
 		cv::drawContours(dstImg, contours, i, CV_RGB(0, 0, 255), 3, CV_FILLED, hierarchy, INT_MAX);
 	}
+#endif
 
 	const float ratio = 28.0 / 16.0;
 	const int sudokuWidth = 127;
@@ -129,6 +138,7 @@ std::vector<cv::Mat> PreProcess::run() {
 			s.height > (1.0-dimensionsToleranceRate) * sudokuHeight && s.height < (1.0+dimensionsToleranceRate) * sudokuHeight &&
 			((tempRect.angle > -angleTolerance && tempRect.angle < angleTolerance) || tempRect.angle < (-180+angleTolerance) || tempRect.angle > (180-angleTolerance))) {
 			rects.push_back(tempRect);
+#if DEBUG
 			cv::line(dstImg, tempRect.center, tempRect.center, Scalar(0, 0, 255), 6);
 //			printf("(%f, %f)\n", tempRect.center.x, tempRect.center.y);
 			cv::Point2f vertices[4];
@@ -136,6 +146,7 @@ std::vector<cv::Mat> PreProcess::run() {
 			for (int i=0; i<4; i++) {
 				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(0, 255, 255), 2);
 			}
+#endif
 //			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
 		}
 	}
@@ -169,7 +180,7 @@ std::vector<cv::Mat> PreProcess::run() {
 		for (int i=0; i<selectedDistances.size(); i++) {
 			selectedDistances[i].dist += 0.1 * abs(rects[selectedDistances[i].index].boundingRect().height * rects[selectedDistances[i].index].boundingRect().width - sudokuWidth * sudokuHeight);
 		}
-		std::sort(selectedDistances.begin(), selectedDistances.end(), [](DistanceWithIndex &a, DistanceWithIndex &b){return (a.dist < b.dist);});
+		std::sort(selectedDistances.begin(), selectedDistances.end(), [](const DistanceWithIndex &a, const DistanceWithIndex &b)mutable -> bool{return (a.dist < b.dist);});
 
 		/*
 		 *	1 2 3
@@ -221,13 +232,16 @@ std::vector<cv::Mat> PreProcess::run() {
 			}
 			cv::Point2f vertices[4];
 			rects[selectedDistances.at(i).index].points(vertices);
+#if DEBUG
 			for (int i=0; i<4; i++) {
 				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
 			}
-			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
+#endif
+			ROI.push_back(original(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
 		}
-
+#if DEBUG
 		std::printf("downLeft:%d downright:%d downRight:%d downleft:%d up:%d down:%d left:%d right:%d\n", upright, downright, upleft, downleft, up, down, left, right);
+#endif
 		//TODO This is not a good algorithm for searching because if you set angleTolerance to 8, it will choose the number (3) twice and will not choose the number (9).
 		//DONE...
 	} else {
@@ -235,19 +249,22 @@ std::vector<cv::Mat> PreProcess::run() {
 		for (int i=0; i<rects.size(); i++) {
 			cv::Point2f vertices[4];
 			rects[i].points(vertices);
+#if DEBUG
 			for (int i=0; i<4; i++) {
 				cv::line(dstImg, vertices[i], vertices[(i+1) % 4], cv::Scalar(255, 0, 255), 2);
 			}
-			ROI.push_back(srcImg(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
+#endif
+			ROI.push_back(original(cv::Rect(vertices[1].x, vertices[1].y, abs(vertices[2].x - vertices[0].x), abs(vertices[2].y - vertices[0].y))));
 		}
 
 	}
 
 	std::printf("Size of ROI: %lu\n", ROI.size());
 
-
+#if DEBUG
 	//ROI.push_back(dstImg);
 	cv::imshow("Destination Image", dstImg);
+#endif
 
 	return ROI;
 }

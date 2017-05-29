@@ -23,4 +23,6 @@
 #include <memory>
 
 
+#define DEBUG 1
+
 #endif /* INCLUDES_HPP_ */

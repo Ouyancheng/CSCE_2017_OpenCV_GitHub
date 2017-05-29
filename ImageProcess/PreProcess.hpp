@@ -63,6 +63,7 @@ public:
 private:
 
 	cv::Mat srcImg;
+	cv::Mat original;
 	static std::shared_ptr<PreProcess> instance;
 
 };

@@ -9,7 +9,7 @@
 using namespace cv;
 int main(int argc, char *argv[]) {
 	Mat srcImg = imread("8.png");
-	Mat srcImg2 = imread("frame1.png");
+//	Mat srcImg2 = imread("frame1.png");
 	Mat dstImg;
 	std::vector<cv::Mat> ROI;
 	if (!srcImg.data) {
@@ -26,9 +26,9 @@ int main(int argc, char *argv[]) {
 	cv::waitKey(0);
 	cv::destroyAllWindows();
 
-	std::shared_ptr<PreProcess> aptr(ppptr);
-	aptr->loadImage(srcImg2);
-	aptr->run();
+//	std::shared_ptr<PreProcess> aptr(ppptr);
+//	aptr->loadImage(srcImg2);
+//	aptr->run();
 
 	for (auto &i : ROI) {
 		if (i.data) imshow("ROI", i);
